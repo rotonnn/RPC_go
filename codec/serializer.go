@@ -48,11 +48,11 @@ func (s *ProtoSerializer) Serialize(data interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	result := cache.Bytes()
-	cache.SetLastMarshaledSize(len(result))
+	bData := cache.Bytes()
+	cache.SetLastMarshaledSize(len(bData))
 	cache.SetBuf(nil)
 
-	return result, nil
+	return bData, nil
 }
 
 // Deserialize convert []bytes to proto struct
@@ -62,10 +62,13 @@ func (s *ProtoSerializer) Deserialize(bData []byte, resp interface{}) error {
 	}
 
 	msgData := resp.(proto.Message)
-	buffer := pool.BufferPool.Get().(*pool.CacheBuffer)
-	buffer.SetBuf(bData)
-	err := buffer.Unmarshal(msgData)
-	buffer.SetBuf(nil)
-	buffer.Reset()
+	msgData.Reset()
+
+	cache := pool.BufferPool.Get().(*pool.CacheBuffer)
+	defer pool.BufferPool.Put(cache)
+
+	cache.SetBuf(bData)
+	err := cache.Unmarshal(msgData)
+	cache.SetBuf(nil)
 	return err
 }
