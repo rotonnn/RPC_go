@@ -18,12 +18,30 @@ type Conn struct {
 	mu            *sync.RWMutex
 }
 
-func (c *Conn) Read(b []byte) (n int, err error) {
-	return
+func (c *Conn) Read(b []byte) (int, error) {
+	if !c.available {
+		return 0, errors.New("connection closed")
+	}
+
+	n, err := c.Conn.Read(b)
+	if err != nil {
+		c.MarkUnavailable()
+		c.Close()
+	}
+	return n, err
 }
 
-func (c *Conn) Write(b []byte) (n int, err error) {
-	return
+func (c *Conn) Write(b []byte) (int, error) {
+	if !c.available {
+		return 0, errors.New("connection closed")
+	}
+
+	n, err := c.Conn.Write(b)
+	if err != nil {
+		c.MarkUnavailable()
+		c.Close()
+	}
+	return n, err
 }
 
 func (c *Conn) MarkUnavailable() {
